@@ -1,0 +1,39 @@
+# Streamlit Community Cloud Optimized Requirements
+# Core web framework
+streamlit>=1.28.1
+fastapi>=0.104.1
+uvicorn[standard]>=0.24.0
+python-multipart>=0.0.6
+
+# Essential web utilities
+requests>=2.31.0
+httpx>=0.25.2
+aiofiles>=23.2.1
+
+# Data processing (core only)
+pandas>=2.1.0
+numpy>=1.24.0
+
+# Google AI (essential)
+google-generativeai>=0.3.2
+
+# Configuration and utilities
+python-dotenv>=1.0.0
+pydantic>=2.5.0
+
+# Logging
+loguru>=0.7.2
+
+# Optional: Vector database (lighter alternatives)
+# chromadb>=0.4.0
+# sentence-transformers>=2.2.0
+
+# Optional: Web scraping (only if needed)
+# selenium>=4.15.0
+# beautifulsoup4>=4.12.0
+# webdriver-manager>=4.0.0
+
+# Optional: LangChain (only if needed)
+# langchain>=0.0.348
+# langchain-community>=0.0.1
+# langchain-google-genai>=0.0.6
