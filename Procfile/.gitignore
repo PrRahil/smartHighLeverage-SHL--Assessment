@@ -42,7 +42,7 @@ ENV/
 logs/
 *.log
 
-# Database
+# Database (vector database should not be committed)
 chroma_db/
 *.db
 *.sqlite
@@ -66,12 +66,32 @@ temp/
 .cache/
 models/
 
-# Data files (if sensitive)
+# Data files
+training_data.xlsx
 data/*.xlsx
 data/test_*.csv
 data/*_checkpoint_*.csv
 
-# Testing
+# Testing files (exclude all test files)
+test_*.py
+simple_test.py
+check_training_data.py
 .pytest_cache/
 .coverage
 htmlcov/
+
+# Documentation files (keeping only essential ones)
+CLEAN_PROJECT_STRUCTURE.md
+COMPREHENSIVE_INTEGRATION_SUMMARY.md
+FINAL_PROJECT_STATUS.md
+
+# Deployment scripts (keeping essential deployment files)
+deploy.py
+start_app.bat
+start_app.sh
+start_both_services.bat
+server.py
+run_app.py
+
+# Config files (keeping essential ones)
+config.toml
