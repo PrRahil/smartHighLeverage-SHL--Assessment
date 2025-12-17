@@ -1,0 +1,77 @@
+# Environment variables (NEVER commit API keys!)
+.env
+.env.local
+.env.production
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+logs/
+*.log
+
+# Database
+chroma_db/
+*.db
+*.sqlite
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Jupyter Notebooks
+.ipynb_checkpoints
+
+# ChromeDriver cache
+.wdm/
+
+# Model cache
+.cache/
+models/
+
+# Data files (if sensitive)
+data/*.xlsx
+data/test_*.csv
+data/*_checkpoint_*.csv
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
