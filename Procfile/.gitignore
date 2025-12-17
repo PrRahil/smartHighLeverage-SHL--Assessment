@@ -84,6 +84,8 @@ htmlcov/
 CLEAN_PROJECT_STRUCTURE.md
 COMPREHENSIVE_INTEGRATION_SUMMARY.md
 FINAL_PROJECT_STATUS.md
+HOW_TO_RUN.md
+DEPLOYMENT.md
 
 # Deployment scripts (keeping essential deployment files)
 deploy.py
@@ -95,3 +97,4 @@ run_app.py
 
 # Config files (keeping essential ones)
 config.toml
+
