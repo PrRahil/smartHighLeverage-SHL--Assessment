@@ -88,13 +88,13 @@ HOW_TO_RUN.md
 DEPLOYMENT.md
 
 # Deployment scripts (keeping essential deployment files)
-deploy.py
-start_app.bat
-start_app.sh
-start_both_services.bat
-server.py
-run_app.py
+# deploy.py - commented out as this might be needed for deployment
+# start_app.bat - commented out as this might be needed for deployment  
+# start_app.sh - commented out as this might be needed for deployment
+# start_both_services.bat - commented out as this might be needed for deployment
+# server.py - commented out as this might be needed for deployment
+# run_app.py - commented out as this might be needed for deployment
 
 # Config files (keeping essential ones)
-config.toml
+# config.toml - commented out as this might be needed for Streamlit
 
