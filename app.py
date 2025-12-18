@@ -21,7 +21,7 @@ except ImportError:
     frontend_available = False
 
 def load_training_recommendations(query):
-    """Load recommendations from training data"""
+    """Load recommendations from training data with graceful fallback"""
     try:
         import pandas as pd
         from pathlib import Path
@@ -32,22 +32,25 @@ def load_training_recommendations(query):
             
             # Simple keyword matching with training data
             query_lower = query.lower()
+            query_words = set(query_lower.split())
             matches = []
             
             for _, row in df.iterrows():
                 training_query = str(row['Query']).lower()
+                training_words = set(training_query.split())
                 url = row['Assessment_url']
                 
-                # Calculate simple similarity score
-                common_words = set(query_lower.split()) & set(training_query.split())
-                similarity = len(common_words) / max(len(query_lower.split()), 1)
+                # Calculate Jaccard similarity (works without scikit-learn)
+                intersection = len(query_words & training_words)
+                union = len(query_words | training_words)
+                similarity = intersection / union if union > 0 else 0
                 
-                if similarity > 0.3:  # 30% word overlap threshold
+                if similarity > 0.25:  # 25% similarity threshold
                     assessment_name = extract_name_from_url(url)
                     matches.append({
                         'name': assessment_name,
                         'url': url,
-                        'description': f"AI-matched from training data (Similarity: {similarity:.0%})",
+                        'description': f"AI-matched from training data (Match: {similarity:.0%})",
                         'similarity': similarity
                     })
             
@@ -55,6 +58,7 @@ def load_training_recommendations(query):
             matches.sort(key=lambda x: x['similarity'], reverse=True)
             return matches[:5]
     except Exception as e:
+        # Silent fallback - no error messages in UI
         pass
     
     return []

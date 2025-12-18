@@ -1,0 +1,7 @@
+# Ultra-lightweight requirements for Streamlit Cloud
+# Minimal dependencies for deployment
+streamlit
+pandas
+numpy
+requests
+openpyxl

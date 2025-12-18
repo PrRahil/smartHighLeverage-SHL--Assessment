@@ -22,6 +22,13 @@ try:
 except ImportError:
     DIRECT_RAG_AVAILABLE = False
 
+# Check for optional dependencies
+try:
+    import sklearn
+    SKLEARN_AVAILABLE = True
+except ImportError:
+    SKLEARN_AVAILABLE = False
+
 # Page configuration
 st.set_page_config(
     page_title="SHL GenAI Recommendation Engine",
@@ -242,37 +249,65 @@ class StreamlitApp:
             return []
         
         try:
-            from sklearn.feature_extraction.text import TfidfVectorizer
-            from sklearn.metrics.pairwise import cosine_similarity
-            import numpy as np
-            
-            # Prepare texts
-            training_queries = self.training_df['Query'].tolist()
-            all_queries = training_queries + [query]
-            
-            # Vectorize
-            vectorizer = TfidfVectorizer(stop_words='english', ngram_range=(1, 2))
-            tfidf_matrix = vectorizer.fit_transform(all_queries)
-            
-            # Calculate similarity
-            query_vector = tfidf_matrix[-1]
-            similarities = cosine_similarity(query_vector, tfidf_matrix[:-1]).flatten()
-            
-            # Get top matches
-            top_indices = np.argsort(similarities)[::-1][:top_k]
-            
-            results = []
-            for idx in top_indices:
-                if similarities[idx] > 0.1:  # Minimum similarity threshold
-                    results.append({
-                        'query': training_queries[idx],
-                        'url': self.training_df.iloc[idx]['Assessment_url'],
-                        'similarity': similarities[idx]
-                    })
-            
-            return results
+            if SKLEARN_AVAILABLE:
+                # Advanced similarity with scikit-learn
+                from sklearn.feature_extraction.text import TfidfVectorizer
+                from sklearn.metrics.pairwise import cosine_similarity
+                import numpy as np
+                
+                training_queries = self.training_df['Query'].tolist()
+                all_queries = training_queries + [query]
+                
+                vectorizer = TfidfVectorizer(stop_words='english', ngram_range=(1, 2))
+                tfidf_matrix = vectorizer.fit_transform(all_queries)
+                
+                query_vector = tfidf_matrix[-1]
+                similarities = cosine_similarity(query_vector, tfidf_matrix[:-1]).flatten()
+                
+                top_indices = np.argsort(similarities)[::-1][:top_k]
+                
+                results = []
+                for idx in top_indices:
+                    if similarities[idx] > 0.1:
+                        results.append({
+                            'query': training_queries[idx],
+                            'url': self.training_df.iloc[idx]['Assessment_url'],
+                            'similarity': similarities[idx]
+                        })
+                return results
+            else:
+                # Fallback to simple word matching
+                return self.simple_similarity_matching(query, top_k)
         except Exception as e:
+            return self.simple_similarity_matching(query, top_k)
+    
+    def simple_similarity_matching(self, query: str, top_k: int = 5):
+        """Simple similarity matching without scikit-learn"""
+        if not hasattr(self, 'training_df') or self.training_df is None:
             return []
+        
+        query_words = set(query.lower().split())
+        results = []
+        
+        for _, row in self.training_df.iterrows():
+            training_query = str(row['Query']).lower()
+            training_words = set(training_query.split())
+            
+            # Calculate Jaccard similarity
+            intersection = len(query_words & training_words)
+            union = len(query_words | training_words)
+            similarity = intersection / union if union > 0 else 0
+            
+            if similarity > 0.2:  # 20% similarity threshold
+                results.append({
+                    'query': str(row['Query']),
+                    'url': row['Assessment_url'],
+                    'similarity': similarity
+                })
+        
+        # Sort by similarity and return top matches
+        results.sort(key=lambda x: x['similarity'], reverse=True)
+        return results[:top_k]
     
     def get_enhanced_recommendations(self, query: str) -> List[Dict]:
         """Get enhanced recommendations using training data"""
