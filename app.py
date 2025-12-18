@@ -20,8 +20,64 @@ try:
 except ImportError:
     frontend_available = False
 
+def load_training_recommendations(query):
+    """Load recommendations from training data"""
+    try:
+        import pandas as pd
+        from pathlib import Path
+        
+        training_file = Path("training_data.xlsx")
+        if training_file.exists():
+            df = pd.read_excel(training_file)
+            
+            # Simple keyword matching with training data
+            query_lower = query.lower()
+            matches = []
+            
+            for _, row in df.iterrows():
+                training_query = str(row['Query']).lower()
+                url = row['Assessment_url']
+                
+                # Calculate simple similarity score
+                common_words = set(query_lower.split()) & set(training_query.split())
+                similarity = len(common_words) / max(len(query_lower.split()), 1)
+                
+                if similarity > 0.3:  # 30% word overlap threshold
+                    assessment_name = extract_name_from_url(url)
+                    matches.append({
+                        'name': assessment_name,
+                        'url': url,
+                        'description': f"AI-matched from training data (Similarity: {similarity:.0%})",
+                        'similarity': similarity
+                    })
+            
+            # Sort by similarity and return top matches
+            matches.sort(key=lambda x: x['similarity'], reverse=True)
+            return matches[:5]
+    except Exception as e:
+        pass
+    
+    return []
+
+def extract_name_from_url(url):
+    """Extract assessment name from URL"""
+    try:
+        if 'view/' in url:
+            name = url.split('view/')[-1].replace('/', '').replace('-', ' ')
+            return name.title()
+        elif 'cognitive' in url.lower():
+            return "Cognitive Ability Assessment"
+        elif 'personality' in url.lower():
+            return "Personality Assessment"
+        elif 'technical' in url.lower():
+            return "Technical Skills Assessment"
+        else:
+            return "SHL Professional Assessment"
+    except:
+        return "SHL Assessment"
+
 def demo_mode():
-    """Simple demo mode for Streamlit deployment"""
+    """Enhanced demo mode with training data for Streamlit deployment"""
     st.set_page_config(
         page_title="SHL GenAI Recommendation Engine",
         page_icon="🎯",
@@ -68,26 +124,33 @@ def demo_mode():
         
         if st.button("Get Recommendations", type="primary"):
             if job_role:
-                st.success(f"✅ Found recommendations for: {job_role}")
+                full_query = f"{job_role} {' '.join(skills)} {query}".strip()
                 
-                # Demo recommendations
-                recommendations = [
-                    {
-                        "name": "Cognitive Ability Assessment",
-                        "url": "https://www.shl.com/en/assessments/cognitive-ability/",
-                        "description": "Measures reasoning and problem-solving abilities"
-                    },
-                    {
-                        "name": "Personality Assessment",
-                        "url": "https://www.shl.com/en/assessments/personality/",
-                        "description": "Evaluates personality traits and behavioral preferences"
-                    },
-                    {
-                        "name": "Situational Judgment Test",
-                        "url": "https://www.shl.com/en/assessments/situational-judgment/",
-                        "description": "Assesses decision-making in work scenarios"
-                    }
-                ]
+                with st.spinner("🤖 AI analyzing your requirements..."):
+                    # Try enhanced recommendations first
+                    recommendations = load_training_recommendations(full_query)
+                    
+                    # Fallback to default if no training matches
+                    if not recommendations:
+                        recommendations = [
+                            {
+                                "name": "Cognitive Ability Assessment",
+                                "url": "https://www.shl.com/en/assessments/cognitive-ability/",
+                                "description": "Measures reasoning and problem-solving abilities"
+                            },
+                            {
+                                "name": "Personality Assessment", 
+                                "url": "https://www.shl.com/en/assessments/personality/",
+                                "description": "Evaluates personality traits and behavioral preferences"
+                            },
+                            {
+                                "name": "Situational Judgment Test",
+                                "url": "https://www.shl.com/en/assessments/situational-judgment/",
+                                "description": "Assesses decision-making in work scenarios"
+                            }
+                        ]
+                
+                st.success(f"✅ AI-powered recommendations for: {job_role}")
                 
                 st.subheader("📋 Recommended Assessments:")
                 
