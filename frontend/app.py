@@ -220,6 +220,98 @@ class StreamlitApp:
             st.error(f"Direct RAG error: {e}")
             return None
 
+    def get_demo_recommendations(self, query: str) -> List[Dict]:
+        """Get demo recommendations when no backend/direct mode available"""
+        # Simple demo recommendations based on query content
+        query_lower = query.lower()
+        
+        recommendations = []
+        
+        # Technical skills assessments
+        if any(word in query_lower for word in ['programming', 'coding', 'developer', 'technical', 'software', 'java', 'python']):
+            recommendations.extend([
+                {
+                    "name": "Programming Skills Assessment",
+                    "url": "https://www.shl.com/en/assessments/technical-skills/",
+                    "description": "Evaluate programming and technical abilities",
+                    "test_type": "Technical Skills",
+                    "duration": "60 minutes"
+                },
+                {
+                    "name": "Cognitive Ability - Technical Reasoning",
+                    "url": "https://www.shl.com/en/assessments/cognitive-ability/",
+                    "description": "Assess logical and analytical thinking for technical roles",
+                    "test_type": "Cognitive",
+                    "duration": "45 minutes"
+                }
+            ])
+        
+        # Leadership and management assessments
+        if any(word in query_lower for word in ['leadership', 'manager', 'management', 'lead', 'supervisor']):
+            recommendations.extend([
+                {
+                    "name": "Leadership Assessment",
+                    "url": "https://www.shl.com/en/assessments/leadership/",
+                    "description": "Evaluate leadership potential and management skills",
+                    "test_type": "Leadership",
+                    "duration": "50 minutes"
+                },
+                {
+                    "name": "Situational Judgment Test - Management",
+                    "url": "https://www.shl.com/en/assessments/situational-judgment/",
+                    "description": "Assess decision-making in management scenarios",
+                    "test_type": "Situational Judgment",
+                    "duration": "40 minutes"
+                }
+            ])
+        
+        # Communication and soft skills
+        if any(word in query_lower for word in ['communication', 'customer', 'service', 'interpersonal', 'teamwork']):
+            recommendations.extend([
+                {
+                    "name": "Communication Skills Assessment",
+                    "url": "https://www.shl.com/en/assessments/communication/",
+                    "description": "Evaluate verbal and written communication abilities",
+                    "test_type": "Communication",
+                    "duration": "35 minutes"
+                },
+                {
+                    "name": "Personality Assessment - Teamwork",
+                    "url": "https://www.shl.com/en/assessments/personality/",
+                    "description": "Assess personality traits for team collaboration",
+                    "test_type": "Personality",
+                    "duration": "30 minutes"
+                }
+            ])
+        
+        # Default recommendations if no specific keywords found
+        if not recommendations:
+            recommendations = [
+                {
+                    "name": "General Cognitive Ability Assessment",
+                    "url": "https://www.shl.com/en/assessments/cognitive-ability/",
+                    "description": "Comprehensive assessment of reasoning abilities",
+                    "test_type": "Cognitive",
+                    "duration": "45 minutes"
+                },
+                {
+                    "name": "Workplace Personality Assessment",
+                    "url": "https://www.shl.com/en/assessments/personality/",
+                    "description": "Evaluate personality traits for workplace success",
+                    "test_type": "Personality",
+                    "duration": "30 minutes"
+                },
+                {
+                    "name": "Situational Judgment Test",
+                    "url": "https://www.shl.com/en/assessments/situational-judgment/",
+                    "description": "Assess decision-making in workplace scenarios",
+                    "test_type": "Situational Judgment",
+                    "duration": "40 minutes"
+                }
+            ]
+        
+        return recommendations[:5]  # Limit to 5 recommendations
+
     def render_assessment_card(self, assessment: Dict, index: int):
         """Render a simplified assessment card with only SHL direct link"""
         # Get the assessment name and URL
@@ -408,26 +500,29 @@ class StreamlitApp:
             # API vs Direct mode
             use_api = st.checkbox("Use FastAPI Backend", value=True, help="Uncheck to use direct RAG engine")
 
+            # Auto-detect API availability
+            api_available = False
             if use_api:
-                st.info(f"Using FastAPI backend: {self.api_base_url}")
-                # Test API connection
                 try:
-                    response = requests.get(f"{self.api_base_url}/health", timeout=10)
+                    response = requests.get(f"{self.api_base_url}/health", timeout=5)
                     if response.status_code == 200:
+                        api_available = True
                         st.success("✅ API Connected")
                         health_data = response.json()
                         st.caption(f"Status: {health_data.get('status', 'unknown')}")
                     else:
                         st.error(f"❌ API Error: {response.status_code}")
-                except requests.exceptions.ConnectionError:
-                    st.error("❌ API Not Available - Make sure FastAPI is running on port 8000")
-                    st.code("python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload")
-                except requests.exceptions.Timeout:
-                    st.warning("⏱️ API response slow - System might be initializing")
-                except Exception as e:
-                    st.error(f"❌ Connection failed: {e}")
-            else:
-                st.info("Using direct RAG engine")
+                except:
+                    # API not available, auto-switch to direct mode
+                    st.warning("⚠️ API not available - Switching to direct mode")
+                    use_api = False
+            
+            if not use_api:
+                if DIRECT_RAG_AVAILABLE:
+                    st.info("✅ Using direct RAG engine")
+                else:
+                    st.warning("⚠️ Direct mode not available - Using demo mode")
+                    st.caption("Some dependencies might be missing for full functionality")
 
             st.header("📊 Sample Queries")
             sample_queries = [
@@ -465,11 +560,14 @@ class StreamlitApp:
                     st.error("Please enter a query")
                 else:
                     with st.spinner("Getting recommendations..."):
-                        # Get recommendations
-                        if use_api:
+                        # Get recommendations with fallback hierarchy
+                        if use_api and api_available:
                             recommendations = self.get_recommendations_api(query)
-                        else:
+                        elif DIRECT_RAG_AVAILABLE:
                             recommendations = self.get_recommendations_direct(query)
+                        else:
+                            # Demo mode fallback
+                            recommendations = self.get_demo_recommendations(query)
 
                         # Store in session state
                         st.session_state.recommendations = recommendations
@@ -555,15 +653,19 @@ def main():
 
     app = StreamlitApp()
     
-    # Check backend health on first load
-    if 'backend_checked' not in st.session_state:
-        st.session_state.backend_checked = True
+    # Initialize system - gracefully handle backend availability
+    if 'system_initialized' not in st.session_state:
+        st.session_state.system_initialized = True
         
         with st.spinner("🚀 Initializing SHL Recommendation System..."):
-            if app.check_backend_health():
-                st.success("✅ System ready! Backend API is connected.")
+            # Try backend first, fallback to direct mode
+            backend_available = app.check_backend_health()
+            if backend_available:
+                st.success("✅ System ready! Full functionality with backend API.")
+            elif DIRECT_RAG_AVAILABLE:
+                st.success("✅ System ready! Running in direct mode.")
             else:
-                st.warning("⚠️ Backend API not immediately available. The system will auto-retry when you make requests.")
+                st.info("ℹ️ Running in demo mode. Some features may be limited.")
     
     app.run()
 
